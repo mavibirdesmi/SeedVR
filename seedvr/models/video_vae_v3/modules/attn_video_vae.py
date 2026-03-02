@@ -113,6 +113,7 @@ class Upsample3D(Upsample2D):
                 .reshape_as(self.upscale_conv.weight)
             )
             self.upscale_conv.weight.data.copy_(identity)
+            self.upscale_conv.weight = self.upscale_conv.weight.to(memory_format=torch.channels_last_3d)
             nn.init.zeros_(self.upscale_conv.bias)
 
         if self.name == "conv":
@@ -145,6 +146,7 @@ class Upsample3D(Upsample2D):
             hidden_states = [hidden_states]
 
         for i in range(len(hidden_states)):
+            hidden_states[i] = hidden_states[i].to(memory_format=torch.channels_last_3d)
             hidden_states[i] = self.upscale_conv(hidden_states[i])
             hidden_states[i] = rearrange(
                 hidden_states[i],
