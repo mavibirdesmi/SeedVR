@@ -113,8 +113,8 @@ class Upsample3D(Upsample2D):
                 .reshape_as(self.upscale_conv.weight)
             )
             self.upscale_conv.weight.data.copy_(identity)
-            self.upscale_conv.weight = self.upscale_conv.weight.to(memory_format=torch.channels_last_3d)
             nn.init.zeros_(self.upscale_conv.bias)
+            nn.utils.convert_conv3d_weight_memory_format(self.upscale_conv, torch.channels_last_3d)
 
         if self.name == "conv":
             self.conv = conv
