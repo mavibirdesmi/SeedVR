@@ -91,26 +91,15 @@ def wavelet_blur(image: Tensor, radius: int, kernel: Tensor):
     """
     Apply wavelet blur to the input tensor.
     """
-    _, _, H, W = image.shape
+    # input shape: (1, 3, H, W)
+    # add channel dimensions to the kernel to make it a 4D tensor
+    kernel = kernel[None, None]
+    # repeat the kernel across all input channels
+    kernel = kernel.repeat(3, 1, 1, 1)
     image = safe_pad_operation(
         image, (radius, radius, radius, radius), mode="replicate"
     )
-
-    # For high dilations, cuDNN falls back to the extremely slow
-    # conv2d_grouped_direct_kernel_int64. Avoid this by computing the
-    # dilated 3x3 convolution manually via gather + multiply + accumulate.
-    if radius > 4:
-        kh, kw = kernel.shape
-        output = torch.zeros_like(image[:, :, :H, :W])
-        for ki in range(kh):
-            for kj in range(kw):
-                h_start = ki * radius
-                w_start = kj * radius
-                output += kernel[ki, kj] * image[:, :, h_start:h_start + H, w_start:w_start + W]
-        return output
-
-    kernel = kernel[None, None]
-    kernel = kernel.repeat(3, 1, 1, 1)
+    # apply convolution
     output = F.conv2d(image, kernel, groups=3, dilation=radius)
     return output
 
